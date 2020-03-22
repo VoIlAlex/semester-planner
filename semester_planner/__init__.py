@@ -143,3 +143,37 @@ class ClassData:
         )
 
 
+class Semester:
+    def __init__(self):
+        self.number = None
+        self.begin = None
+        self.end = None
+        self.lectures = []
+        self.practical = []
+        self.labs = []
+
+    def parse_dict(self, semester_dict: dict):
+        self.number = semester_dict['semester']['number']
+        self.begin = semester_dict['semester']['begin']
+        self.end = semester_dict['semester']['end']
+
+        def parse_study_type(name: str, semester_dict: dict) -> List:
+            parsed_study_type = []
+            for subject_info in semester_dict['classes']['labs']:
+                subject = subject_info['subject']
+                for day in subject_info['schedule']:
+                    for class_data in subject_info['schedule'][day]:
+                        class_data = ClassData.parse(
+                            class_data,
+                            begin=self.begin,
+                            end=self.end,
+                            subject=subject
+                        )
+                        parsed_study_type.append(class_data)
+            return parsed_study_type
+
+        self.lectures = parse_study_type('lectures', semester_dict)
+        self.parctical = parse_study_type('parctical', semester_dict)
+        self.labs = parse_study_type('labs', semester_dict)
+
+
