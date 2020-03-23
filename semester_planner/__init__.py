@@ -114,7 +114,7 @@ class ClassData:
             interval = defaults.get('interval', 1)
 
         if 'end' in obj:
-            start = obj['end']
+            end = obj['end']
         elif 'count' in obj:
             count = obj['count']
             end = datetime.datetime.strptime(
