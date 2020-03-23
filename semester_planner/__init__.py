@@ -1,3 +1,4 @@
+import todoist
 from todoist.api import TodoistAPI
 import argparse
 import json
@@ -176,4 +177,113 @@ class Semester:
         self.parctical = parse_study_type('parctical', semester_dict)
         self.labs = parse_study_type('labs', semester_dict)
 
+
+class SemesterPlanner:
+    # I don't know whether it works
+    # for Windows. I mean /tmp/... It
+    # does not exist on Windows, right?
+    # So... We'll see what gonna happen;)
+    logger = BeautifulLogger.get_instance(
+        os.path.join(
+            LOGS_LOCATION,
+            'semester_planner.log'
+        )
+    )
+
+    def __init__(self, semester: Semester):
+        self.semester = semester
+
+    def setup_todoist(self,
+                      api_token: str,
+                      root_project: str = None,
+                      labs_project: str = "Labs",
+                      lectures_project: str = "Lectures",
+                      practical_project: str = "Practical"):
+        api = TodoistAPI(api_token)
+        api.sync()
+
+        # Get root project from TodoistAPI
+        projects: List[todoist.models.Project] = api.state['projects']
+
+        def create_project_if_not_exists(project_name: str,
+                                         parent_project: todoist.models.Project,
+                                         color: todoist.api.Col) -> todoist.models.Project:
+            for project in projects:
+                if project['name'] == project_name and project['parent_id'] == parent_project['id']:
+                    return project
+            else:
+                project = api.projects.add(
+                    name=project_name,
+                    parent_id=parent_project['id']
+                )
+                api.commit()
+                return project
+
+        for project in projects:
+            if project['name'] == root_project:
+                answer = None
+                while answer != 'y' and answer != 'n':
+                    answer = input(
+                        'Do you want to clear the project "{}"? [y/n] '.format(root_project))
+                if answer == 'y':
+                    project.delete()
+                    root_project = api.projects.add(name=root_project)
+                    break
+                else:
+                    root_project = project
+                    break
+        else:
+            root_project = api.projects.add(name=root_project)
+        api.commit()
+
+        labs_project = create_project_if_not_exists(
+            project_name=labs_project,
+            parent_project=root_project
+        )
+        self.__todoist_upload_labs(api, labs_project)
+
+        api.commit()
+
+    def __todoist_upload_labs(self, api: todoist.TodoistAPI, labs_project: todoist.models.Project):
+        semester_task_content = 'Labs. Semester #{}'.format(
+            self.semester.number,
+            date_string=str(self.semester.end),
+            project_id=labs_project['id']
+        )
+        semester_task = api.items.add(
+            semester_task_content,
+            project_id=labs_project['id']
+        )
+        subject = None
+        subject_task = None
+        subject_lab_count = 0
+        for class_data in self.semester.labs:
+            if class_data.subject != subject:
+                subject = class_data.subject
+                subject_task = api.items.add(
+                    '{}:'.format(class_data.subject),
+                    project_id=labs_project['id'],
+                    parent_id=semester_task['id']
+                )
+                subject_lab_count = 0
+            for class_instance in class_data:
+                subject_lab_count += 1
+                class_instance_content = '{}. Lab #{}'.format(
+                    subject,
+                    subject_lab_count)
+
+                # Create Todoist-compatible
+                # due date string
+                class_instance_due_date = class_instance.date + class_data.interval
+                if class_instance_due_date < datetime.date.today():
+                    class_instance_due_date = datetime.date.today()
+                class_instance_due_date = str(class_instance_due_date)
+
+                api.items.add(
+                    class_instance_content,
+                    project_id=labs_project['id'],
+                    parent_id=subject_task['id'],
+                    date_string=class_instance_due_date
+                )
+            api.commit()
 
