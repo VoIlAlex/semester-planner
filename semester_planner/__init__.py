@@ -148,9 +148,9 @@ class Semester:
         self.number = None
         self.begin = None
         self.end = None
-        self.lectures = []
-        self.practical = []
-        self.labs = []
+        self.lectures: List[ClassData] = []
+        self.practical: List[ClassData] = []
+        self.labs: List[ClassData] = []
 
     def parse_dict(self, semester_dict: dict):
         self.number = semester_dict['semester']['number']
