@@ -1,4 +1,5 @@
 import todoist
+import todoist_colors
 from todoist.api import TodoistAPI
 import argparse
 import json
@@ -205,20 +206,6 @@ class SemesterPlanner:
         # Get root project from TodoistAPI
         projects: List[todoist.models.Project] = api.state['projects']
 
-        def create_project_if_not_exists(project_name: str,
-                                         parent_project: todoist.models.Project,
-                                         color: todoist.api.Col) -> todoist.models.Project:
-            for project in projects:
-                if project['name'] == project_name and project['parent_id'] == parent_project['id']:
-                    return project
-            else:
-                project = api.projects.add(
-                    name=project_name,
-                    parent_id=parent_project['id']
-                )
-                api.commit()
-                return project
-
         for project in projects:
             if project['name'] == root_project:
                 answer = None
@@ -227,7 +214,10 @@ class SemesterPlanner:
                         'Do you want to clear the project "{}"? [y/n] '.format(root_project))
                 if answer == 'y':
                     project.delete()
-                    root_project = api.projects.add(name=root_project)
+                    root_project = api.projects.add(
+                        name=root_project,
+                        color=todoist_colors.PURPLE
+                    )
                     break
                 else:
                     root_project = project
@@ -236,13 +226,60 @@ class SemesterPlanner:
             root_project = api.projects.add(name=root_project)
         api.commit()
 
-        labs_project = create_project_if_not_exists(
+        labs_project = self.__todoist_create_project(
+            api=api,
             project_name=labs_project,
-            parent_project=root_project
-        )
+            override=False,
+            parent_project=root_project,
+            existed_projects=projects,
+            color=todoist_colors.BLUE)
         self.__todoist_upload_labs(api, labs_project)
 
+        lectures_project = self.__todoist_create_project(
+            api=api,
+            project_name=lectures_project,
+            override=False,
+            parent_project=root_project,
+            existed_projects=projects,
+            color=todoist_colors.GREEN
+        )
+        self.__todoist_upload_lectures(api, lectures_project)
+
+        practical_project = self.__todoist_create_project(
+            api=api,
+            project_name=practical_project,
+            override=False,
+            parent_project=root_project,
+            existed_projects=projects,
+            color=todoist_colors.ORANGE
+        )
+        self.__todoist_upload_practical(api, practical_project)
+
         api.commit()
+
+    def __todoist_create_project(self,
+                                 api: todoist.TodoistAPI,
+                                 project_name: str,
+                                 override: bool,
+                                 color: int,
+                                 parent_project: todoist.models.Project = None,
+                                 existed_projects: List[todoist.models.Project] = None):
+        existed_projects = existed_projects if existed_projects is not None else []
+        for project in existed_projects:
+            if project['name'] == project_name:
+                if parent_project and project['parent_id'] != parent_project['id']:
+                    continue
+                if override:
+                    project.delete()
+                    break
+                return project
+        project = api.projects.add(
+            name=project_name,
+            parent_id=parent_project['id'],
+            color=color
+        )
+        api.commit()
+        return project
 
     def __todoist_upload_labs(self, api: todoist.TodoistAPI, labs_project: todoist.models.Project):
         semester_task_content = 'Labs. Semester #{}'.format(
