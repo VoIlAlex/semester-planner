@@ -1,2 +1,3 @@
 todoist-python
 via-logger
+todoist-colors
