@@ -1,4 +1,5 @@
 """Collection of dataholders."""
+import datetime
 
 
 class Class:
@@ -133,7 +134,7 @@ class ClassData:
 class Semester:
     def __init__(self):
         self.number = None
-        self.begin = None
+        self.start = None
         self.end = None
         self.lectures: List[ClassData] = []
         self.practical: List[ClassData] = []
@@ -141,7 +142,7 @@ class Semester:
 
     def parse_dict(self, semester_dict: dict):
         self.number = semester_dict['semester']['number']
-        self.begin = semester_dict['semester']['begin']
+        self.start = semester_dict['semester']['start']
         self.end = semester_dict['semester']['end']
 
         def parse_study_type(name: str, semester_dict: dict) -> List:
@@ -152,7 +153,7 @@ class Semester:
                     for class_data in subject_info['schedule'][day]:
                         class_data = ClassData.parse(
                             class_data,
-                            begin=self.begin,
+                            start=self.start,
                             end=self.end,
                             subject=subject
                         )
