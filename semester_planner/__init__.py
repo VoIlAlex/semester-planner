@@ -10,7 +10,6 @@ from via_logger import BeautifulLogger
 from via_logger.utils import generate_log_filename
 from typing import Union, List
 from .data import Class, ClassData, ClassIterator
-# LOGS_LOCATION = '/var/log/semester_planner' if sys.platform == 'linux' else '.'
 
 LOGS_LOCATION = '.'
 if not os.path.exists(LOGS_LOCATION):
@@ -205,3 +204,45 @@ class SemesterPlanner:
                 )
             api.commit()
 
+    def __todoist_upload_practical(self, api: todoist.TodoistAPI, practical_project: todoist.models.Project):
+        semester_task_content = 'Practical. Semester #{}'.format(
+            self.semester.number,
+            date_string=str(self.semester.end),
+            project_id=practical_project['id']
+        )
+        semester_task = api.items.add(
+            semester_task_content,
+            project_id=practical_project['id']
+        )
+        subject = None
+        subject_task = None
+        subject_practicals_count = 0
+        for class_data in self.semester.labs:
+            if class_data.subject != subject:
+                subject = class_data.subject
+                subject_task = api.items.add(
+                    '{}:'.format(class_data.subject),
+                    project_id=practical_project['id'],
+                    parent_id=semester_task['id']
+                )
+                subject_practicals_count = 0
+            for class_instance in class_data:
+                subject_practicals_count += 1
+                class_instance_content = '{}. Practical #{}'.format(
+                    subject,
+                    subject_practicals_count)
+
+                # Create Todoist-compatible
+                # due date string
+                class_instance_due_date = class_instance.date + class_data.interval
+                if class_instance_due_date < datetime.date.today():
+                    class_instance_due_date = datetime.date.today()
+                class_instance_due_date = str(class_instance_due_date)
+
+                api.items.add(
+                    class_instance_content,
+                    project_id=practical_project['id'],
+                    parent_id=subject_task['id'],
+                    date_string=class_instance_due_date
+                )
+            api.commit()
