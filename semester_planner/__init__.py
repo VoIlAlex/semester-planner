@@ -162,3 +162,46 @@ class SemesterPlanner:
                 )
             api.commit()
 
+    def __todoist_upload_lectures(self, api: todoist.TodoistAPI, lectures_project: todoist.models.Project):
+        semester_task_content = 'Lecture. Semester #{}'.format(
+            self.semester.number,
+            date_string=str(self.semester.end),
+            project_id=lectures_project['id']
+        )
+        semester_task = api.items.add(
+            semester_task_content,
+            project_id=lectures_project['id']
+        )
+        subject = None
+        subject_task = None
+        subject_lectures_count = 0
+        for class_data in self.semester.labs:
+            if class_data.subject != subject:
+                subject = class_data.subject
+                subject_task = api.items.add(
+                    '{}:'.format(class_data.subject),
+                    project_id=lectures_project['id'],
+                    parent_id=semester_task['id']
+                )
+                subject_lectures_count = 0
+            for class_instance in class_data:
+                subject_lectures_count += 1
+                class_instance_content = '{}. Lecture #{}'.format(
+                    subject,
+                    subject_lectures_count)
+
+                # Create Todoist-compatible
+                # due date string
+                class_instance_due_date = class_instance.date + class_data.interval
+                if class_instance_due_date < datetime.date.today():
+                    class_instance_due_date = datetime.date.today()
+                class_instance_due_date = str(class_instance_due_date)
+
+                api.items.add(
+                    class_instance_content,
+                    project_id=lectures_project['id'],
+                    parent_id=subject_task['id'],
+                    date_string=class_instance_due_date
+                )
+            api.commit()
+
