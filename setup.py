@@ -38,14 +38,14 @@ setup(
 
     # Start with a small number and increase it with every change you make
     # https://semver.org
-    version='1.0.0',
+    version='1.0.1',
 
     # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     # For example: MIT
     license='MIT',
 
     # Short description of your library
-    description='utility to plan your semester in different apps.',
+    description='Utility to plan your semester in different apps.',
 
     # Long description of your library
     long_description=long_description,
@@ -68,7 +68,7 @@ setup(
     url='https://github.com/VoIlAlex',
 
     # Link from which the project can be downloaded
-    download_url='https://github.com/VoIlAlex/semester-planner/archive/v1.0.0.tar.gz',
+    download_url='https://github.com/VoIlAlex/semester-planner/archive/v1.0.1.tar.gz',
 
     # List of keyword arguments
     keywords=['utility', 'todoist', 'cli', 'planner', 'study'],
