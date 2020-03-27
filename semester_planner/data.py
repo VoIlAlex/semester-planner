@@ -1,5 +1,6 @@
 """Collection of dataholders."""
 import datetime
+from typing import Union, List
 
 
 class Class:
