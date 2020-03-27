@@ -9,7 +9,8 @@ import datetime
 from via_logger import BeautifulLogger
 from via_logger.utils import generate_log_filename
 from typing import Union, List
-from .data import Class, ClassData, ClassIterator
+from .data import Class, ClassData, ClassIterator, Semester
+from .utils import SemesterPlannerConfig
 
 LOGS_LOCATION = '.'
 if not os.path.exists(LOGS_LOCATION):
@@ -33,64 +34,69 @@ class SemesterPlanner:
 
     def setup_todoist(self,
                       api_token: str,
-                      root_project: str = None,
+                      root_project: str = "University",
                       labs_project: str = "Labs",
                       lectures_project: str = "Lectures",
-                      practical_project: str = "Practical"):
+                      practical_project: str = "Practical",
+                      override: bool = None):
         api = TodoistAPI(api_token)
         api.sync()
 
         # Get root project from TodoistAPI
         projects: List[todoist.models.Project] = api.state['projects']
 
+        override = False if override is None else override
         for project in projects:
             if project['name'] == root_project:
+                if override is not None:
+                    root_project = project
+                    break
                 answer = None
                 while answer != 'y' and answer != 'n':
                     answer = input(
-                        'Do you want to clear the project "{}"? [y/n] '.format(root_project))
+                        'Do you want to override existing projects? [y/n] '.format(root_project))
                 if answer == 'y':
-                    project.delete()
-                    root_project = api.projects.add(
-                        name=root_project,
-                        color=todoist_colors.PURPLE
-                    )
-                    break
-                else:
-                    root_project = project
-                    break
+                    override = True
+                root_project = project
+                break
         else:
-            root_project = api.projects.add(name=root_project)
+            root_project = api.projects.add(
+                name=root_project,
+                color=todoist_colors.PURPLE
+            )
         api.commit()
 
-        labs_project = self.__todoist_create_project(
-            api=api,
-            project_name=labs_project,
-            override=False,
-            parent_project=root_project,
-            existed_projects=projects,
-            color=todoist_colors.BLUE)
-        self.__todoist_upload_labs(api, labs_project)
+        if labs_project is not None:
+            labs_project = self.__todoist_create_project(
+                api=api,
+                project_name=labs_project,
+                override=override,
+                parent_project=root_project,
+                existed_projects=projects,
+                color=todoist_colors.BLUE)
+            self.__todoist_upload_labs(api, labs_project)
 
-        lectures_project = self.__todoist_create_project(
-            api=api,
-            project_name=lectures_project,
-            override=False,
-            parent_project=root_project,
-            existed_projects=projects,
-            color=todoist_colors.GREEN
-        )
-        self.__todoist_upload_lectures(api, lectures_project)
+        if lectures_project is not None:
+            lectures_project = self.__todoist_create_project(
+                api=api,
+                project_name=lectures_project,
+                override=override,
+                parent_project=root_project,
+                existed_projects=projects,
+                color=todoist_colors.GREEN
+            )
+            self.__todoist_upload_lectures(api, lectures_project)
 
-        practical_project = self.__todoist_create_project(
-            api=api,
-            project_name=practical_project,
-            override=False,
-            parent_project=root_project,
-            existed_projects=projects,
-            color=todoist_colors.ORANGE
-        )
-        self.__todoist_upload_practical(api, practical_project)
+        if practical_project is not None:
+            practical_project = self.__todoist_create_project(
+                api=api,
+                project_name=practical_project,
+                override=override,
+                parent_project=root_project,
+                existed_projects=projects,
+                color=todoist_colors.ORANGE
+            )
+            self.__todoist_upload_practical(api, practical_project)
 
         api.commit()
 
