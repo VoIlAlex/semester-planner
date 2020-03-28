@@ -3,7 +3,7 @@ import os
 
 
 def _process_args(args: argparse.Namespace):
-    if args.semester is None:
+    if args.semester is None and args.command != 'config':
         for file in os.listdir(os.getcwd()):
             if os.path.isfile(file):
                 file_name, ext = os.path.splitext(file)
