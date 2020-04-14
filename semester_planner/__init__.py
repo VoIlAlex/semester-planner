@@ -125,7 +125,7 @@ class SemesterPlanner:
         return project
 
     def __todoist_upload_labs(self, api: todoist.TodoistAPI, labs_project: todoist.models.Project):
-        semester_task_content = 'Labs. Semester #{}'.format(
+        semester_task_content = '**Labs. Semester #{}**'.format(
             self.semester.number,
             date_string=str(self.semester.end),
             project_id=labs_project['id']
@@ -159,11 +159,22 @@ class SemesterPlanner:
                     class_instance_due_date = datetime.date.today()
                 class_instance_due_date = str(class_instance_due_date)
 
-                api.items.add(
+                lab_task = api.items.add(
                     class_instance_content,
                     project_id=labs_project['id'],
                     parent_id=subject_task['id'],
                     date_string=class_instance_due_date
+                )
+
+                api.items.add(
+                    'Execute the lab (report)',
+                    project_id=labs_project['id'],
+                    parent_id=lab_task['id']
+                )
+                api.items.add(
+                    'Approve the lab',
+                    project_id=labs_project['id'],
+                    parent_id=lab_task['id']
                 )
             api.commit()
 
